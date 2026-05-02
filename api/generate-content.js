@@ -1,9 +1,12 @@
 // Free model fallback chain — tries each until one works
+// Updated 2026-05-02: verified working on OpenRouter
 const FREE_MODELS = [
-  'meta-llama/llama-3.1-8b-instruct:free',
-  'google/gemma-3-4b-it:free',
-  'mistralai/mistral-7b-instruct:free',
-  'qwen/qwen3-4b:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'google/gemma-3-27b-it:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
+  'minimax/minimax-m2.5:free',
+  'openai/gpt-oss-20b:free',
 ];
 
 export default async function handler(req, res) {
@@ -36,8 +39,11 @@ export default async function handler(req, res) {
         }),
       });
 
-      // Rate limited or out of tokens — try next model
-      if (response.status === 429 || response.status === 402) continue;
+      // Rate limited or out of tokens — wait briefly then try next model
+      if (response.status === 429 || response.status === 402) {
+        await new Promise(r => setTimeout(r, 1000));
+        continue;
+      }
 
       const data = await response.json();
       if (!response.ok) continue; // try next model on any error
