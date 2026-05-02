@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sastech Content Engine</title>
+<meta name="description" content="AI-powered content creation, image generation & prospect outreach for Sastech Consults">
+<meta name="theme-color" content="#00c2ff">
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#060b18;--surface:#0d1424;--card:#111c2ecc;--elevated:#162040;--glass:rgba(17,28,50,.72);
+  --accent:#00c2ff;--accent2:#7c5cfc;--grad:linear-gradient(135deg,#00c2ff,#7c5cfc);
+  --grad-warm:linear-gradient(135deg,#f59e0b,#ef4444);
+  --w:#f1f5f9;--s:#64748b;--muted:#475569;--pale:#cbd5e1;--border:rgba(255,255,255,.07);--border-h:rgba(255,255,255,.14);
+  --accent-glow:rgba(0,194,255,.12);--success:#22c55e;--warn:#f59e0b;--err:#ef4444;
+  --sidebar:260px;--topbar:60px;--radius:14px;--radius-sm:8px;
+  --nl:rgba(255,255,255,.04);--t:var(--accent);--n:var(--bg);--p:var(--border);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);font-family:'Inter',system-ui,-apple-system,sans-serif;color:var(--w);-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font-family:inherit}
+
+/* ── ANIMATED TOP BAR LINE ── */
+.app::before{content:'';position:fixed;top:0;left:0;right:0;height:2px;background:var(--grad);z-index:999;animation:shimmer 3s ease infinite}
+@keyframes shimmer{0%,100%{opacity:.6}50%{opacity:1}}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;overflow:hidden;position:relative}
+.sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;position:relative}
+.sidebar::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(180deg,var(--accent) 0%,transparent 50%,var(--accent2) 100%);opacity:.3}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+
+/* ── SIDEBAR ── */
+.sb-logo{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sb-icon{width:36px;height:36px;background:var(--grad);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;flex-shrink:0;box-shadow:0 4px 16px rgba(0,194,255,.25)}
+.sb-name{font-weight:700;font-size:14px;letter-spacing:-.02em}
+.sb-sub{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:10px;font-weight:600;letter-spacing:.04em}
+.sb-section{padding:18px 16px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:all .2s ease;border:none;background:transparent;color:var(--s);width:100%;text-align:left;font-size:13px;font-weight:500;border-radius:0;border-left:3px solid transparent;position:relative}
+.nav-item:hover{background:rgba(255,255,255,.03);color:var(--w);border-left-color:rgba(0,194,255,.3)}
+.nav-item.active{background:var(--accent-glow);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+.nav-item.active::after{content:'';position:absolute;right:12px;width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.nav-icon{font-size:16px;flex-shrink:0}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;height:var(--topbar);backdrop-filter:blur(12px)}
+.topbar-title{font-weight:700;font-size:16px;letter-spacing:-.02em}
+.topbar-sub{color:var(--s);font-size:12px;margin-top:1px}
+.topbar-actions{display:flex;gap:8px}
+
+/* ── CONTENT AREA ── */
+.content{flex:1;overflow-y:auto;padding:24px;background:linear-gradient(180deg,var(--bg) 0%,#080e1f 100%)}
+.tab-panel{display:none}
+.tab-panel.active{display:block;animation:panelIn .35s cubic-bezier(.16,1,.3,1)}
+@keyframes panelIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CARDS (glassmorphism) ── */
+.card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;transition:all .25s ease}
+.card:hover{border-color:var(--border-h);box-shadow:0 8px 40px rgba(0,0,0,.3)}
+.card-title{font-weight:700;font-size:14px;margin-bottom:4px;letter-spacing:-.01em}
+.card-sub{color:var(--s);font-size:12px;margin-bottom:14px;line-height:1.5}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}.sidebar{display:none}.app::before{display:none}}
+
+/* ── FORMS ── */
+.field{margin-bottom:16px}
+label{display:block;font-size:11px;font-weight:600;color:var(--pale);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+input,textarea,select{width:100%;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;background:var(--bg);border:1.5px solid var(--border);color:var(--w);transition:all .2s ease}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+textarea{resize:vertical}
+select option{background:var(--surface)}
+
+/* ── BUTTONS ── */
+.btn{padding:10px 18px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s ease;display:inline-flex;align-items:center;gap:7px;letter-spacing:-.01em}
+.btn-t{background:var(--grad);color:#fff;box-shadow:0 2px 12px rgba(0,194,255,.2)}
+.btn-t:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,194,255,.35)}
+.btn-t:active{transform:translateY(0)}
+.btn-g{background:transparent;border:1.5px solid var(--border);color:var(--s)}
+.btn-g:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.btn-grn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff}
+.btn-grn:hover{box-shadow:0 4px 16px rgba(34,197,94,.3)}
+.btn-sm{padding:6px 12px;font-size:11px;border-radius:6px}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+
+/* ── AI OUTPUT ── */
+.ai-out{background:linear-gradient(135deg,rgba(0,194,255,.05),rgba(124,92,252,.05));border:1px solid rgba(0,194,255,.2);border-radius:var(--radius);padding:18px;margin-top:14px;font-size:13px;line-height:1.8;white-space:pre-wrap;word-wrap:break-word;max-height:420px;overflow-y:auto;display:none;position:relative}
+.ai-out.show{display:block;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.ai-thinking{display:none;align-items:center;gap:10px;color:var(--s);font-size:13px;margin-top:12px}
+.ai-thinking.show{display:flex}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse-dot 1.2s ease infinite}
+.dot:nth-child(2){animation-delay:.2s;background:var(--accent2)}
+.dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse-dot{0%,100%{transform:scale(.7);opacity:.4}50%{transform:scale(1);opacity:1}}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.02em}
+.b-t{background:var(--accent-glow);color:var(--accent);border:1px solid rgba(0,194,255,.25)}
+.b-g{background:rgba(180,83,9,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.25)}
+.b-grn{background:rgba(34,197,94,.08);color:#4ade80;border:1px solid rgba(74,222,128,.25)}
+.b-gray{background:rgba(255,255,255,.04);color:var(--s);border:1px solid var(--border)}
+
+/* ── PLATFORM TABS ── */
+.ptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.ptab{padding:7px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;color:var(--s);font-size:12px;font-weight:500;cursor:pointer;transition:all .2s ease}
+.ptab:hover{border-color:rgba(0,194,255,.3);color:var(--w);background:rgba(0,194,255,.05)}
+.ptab.active{background:var(--grad);border-color:transparent;color:#fff;font-weight:600;box-shadow:0 2px 12px rgba(0,194,255,.25)}
+
+/* ── BLOG EDITOR ── */
+.editor{background:var(--glass);backdrop-filter:blur(12px);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.editor-toolbar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;gap:6px;flex-wrap:wrap}
+.tb-btn{padding:5px 10px;border-radius:6px;border:none;background:transparent;color:var(--s);font-size:12px;cursor:pointer;transition:all .15s}
+.tb-btn:hover{background:rgba(255,255,255,.06);color:var(--w)}
+#editor-body{width:100%;min-height:300px;padding:18px;background:transparent;border:none;color:var(--w);font-size:14px;line-height:1.9;resize:vertical}
+#editor-body:focus{outline:none}
+
+/* ── STATS ── */
+.stat{background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-align:center;transition:all .25s ease}
+.stat:hover{border-color:rgba(0,194,255,.2);transform:translateY(-2px)}
+.stat-num{font-size:28px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:11px;color:var(--s);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:10px 14px;background:rgba(255,255,255,.03);color:var(--s);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--border)}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+
+/* ── IMAGE GEN SECTION ── */
+.img-gen-area{margin-top:14px;padding:16px;background:rgba(124,92,252,.06);border:1px solid rgba(124,92,252,.15);border-radius:var(--radius);display:none}
+.img-gen-area.show{display:block;animation:fadeUp .3s ease}
+.img-preview{width:100%;max-width:400px;border-radius:var(--radius-sm);margin-top:12px;border:1px solid var(--border)}
+
+/* ── TOAST ── */
+.toast-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:#fff;animation:slideIn .3s ease;backdrop-filter:blur(12px);border:1px solid var(--border)}
+.toast-success{background:rgba(34,197,94,.9)}
+.toast-error{background:rgba(239,68,68,.9)}
+.toast-info{background:rgba(0,194,255,.9);color:var(--bg)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+.copied{color:var(--accent);font-size:11px;margin-left:6px;opacity:0;transition:opacity .3s}
+.copied.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-icon">S</div>
+    <div><div class="sb-name">Sastech</div><div class="sb-sub">Content Engine</div></div>
+  </div>
+  <div class="sb-section">Create</div>
+  <button class="nav-item active" onclick="show('writer')"><span class="nav-icon">✍️</span>AI Post Writer</button>
+  <button class="nav-item" onclick="show('blog')"><span class="nav-icon">📝</span>Blog Editor</button>
+  <button class="nav-item" onclick="show('video')"><span class="nav-icon">🎬</span>Video Scripts</button>
+  <div class="sb-section">Manage</div>
+  <button class="nav-item" onclick="show('portfolio')"><span class="nav-icon">🗂️</span>Portfolio Projects</button>
+  <button class="nav-item" onclick="show('pipeline')"><span class="nav-icon">📅</span>Content Pipeline</button>
+  <div class="sb-section">Grow</div>
+  <button class="nav-item" onclick="show('community')"><span class="nav-icon">🏘️</span>Community Setup</button>
+  <button class="nav-item" onclick="show('outreach')"><span class="nav-icon">🎯</span>Lead Finder</button>
+  <button class="nav-item" onclick="show('automation')"><span class="nav-icon">⚡</span>Automation Guide</button>
+  <div class="sb-section">Reference</div>
+  <button class="nav-item" onclick="show('templates')"><span class="nav-icon">📋</span>DM Templates</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar" id="topbar-area">
+    <div><div class="topbar-title" id="tb-title">AI Post Writer</div><div class="topbar-sub" id="tb-sub">Generate ready-to-post content for any platform</div></div>
+    <div class="topbar-actions" id="tb-actions"></div>
+  </div>
+  <div class="content" id="main-content">
+
+    <!-- ══ AI POST WRITER ══════════════════════════════════════════ -->
+    <div class="tab-panel active" id="tab-writer">
+      <div class="grid2">
+        <div>
+          <div class="card">
+            <div class="card-title">What are you posting about?</div>
+            <div class="card-sub">Describe what you built, learned, or want to share</div>
+            <div class="field">
+              <label>Topic / What happened</label>
+              <textarea id="w-topic" rows="3" placeholder="e.g. I just built a WhatsApp chatbot for a Lagos accounting firm using n8n and Claude API. It answers 200+ questions per day automatically. Took 6 hours to build."></textarea>
+            </div>
+            <div class="field">
+              <label>Platform</label>
+              <div class="ptabs" id="w-platform">
+                <button class="ptab active" onclick="setPlatform(this,'linkedin')">LinkedIn</button>
+                <button class="ptab" onclick="setPlatform(this,'twitter')">Twitter/X</button>
+                <button class="ptab" onclick="setPlatform(this,'tiktok')">TikTok Script</button>
+                <button class="ptab" onclick="setPlatform(this,'blog')">Blog Post</button>
+                <button class="ptab" onclick="setPlatform(this,'thread')">Thread</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Post Type</label>
+              <select id="w-type">
+                <option value="announce">🚀 Announcement / Launch</option>
+                <option value="buildinpublic">🔨 Build in Public Update</option>
+                <option value="education">📚 Technical Education</option>
+                <option value="casestudy">📊 Case Study / Results</option>
+                <option value="personal">❤️ Personal Story</option>
+                <option value="opinion">💬 Opinion / Take</option>
+                <option value="sell">💰 Service Promotion</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Tone</label>
+              <select id="w-tone">
+                <option value="authentic">Authentic Nigerian developer — casual but expert</option>
+                <option value="professional">Professional consultant — formal but warm</option>
+                <option value="educational">Teacher — breaking down complex things simply</option>
+                <option value="storyteller">Storyteller — narrative arc, emotional</option>
+              </select>
+            </div>
+            <button class="btn btn-t" onclick="generatePost()" id="gen-btn">✨ Generate Content</button>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="height:calc(100% - 14px)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div class="card-title">Generated Content</div>
+              <button class="btn btn-g btn-sm" onclick="copyOutput()" id="copy-btn" style="display:none">📋 Copy</button>
+            </div>
+            <div class="ai-thinking" id="think1">
+              <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+              <span>Writing your content...</span>
+            </div>
+            <div class="ai-out" id="post-out"></div>
+            <div class="img-gen-area" id="img-gen-post">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="font-weight:600;font-size:13px">🖼️ Generate Matching Image</div>
+              </div>
+              <div class="field" style="margin-bottom:8px">
+                <label>Image Prompt (auto-generated — edit if needed)</label>
+                <textarea id="img-prompt" rows="3" placeholder="AI will auto-fill based on your content..."></textarea>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+                <button class="btn btn-t btn-sm" onclick="generatePostImage()" id="img-gen-btn">✨ Generate via API</button>
+                <button class="btn btn-g btn-sm" onclick="copyImgPrompt()">📋 Copy Prompt</button>
+                <a class="btn btn-g btn-sm" href="https://www.bing.com/images/create" target="_blank">🆓 Bing Creator</a>
+                <a class="btn btn-g btn-sm" href="https://ideogram.ai" target="_blank">🆓 Ideogram</a>
+                <a class="btn btn-g btn-sm" href="https://chatgpt.com" target="_blank">🆓 ChatGPT</a>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px">💡 No API key? Copy the prompt above and paste it into any free image generator.</div>
+              <div class="ai-thinking" id="think-img"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>Generating image...</span></div>
+              <img id="img-preview" class="img-preview" style="display:none" alt="Generated content image">
+              <div id="img-actions" style="display:none;margin-top:10px;gap:6px">
+                <a id="img-download" class="btn btn-g btn-sm" download="content-image.png">⬇️ Download</a>
+              </div>
+            </div>
+            <div id="post-placeholder" style="color:var(--s);font-size:13px;line-height:1.7;margin-top:8px">
+              Your generated post will appear here.<br><br>
+              It will include the full post text, hashtags, and a matching AI-generated image.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quick Post Triggers</div>
+        <div class="card-sub">Click any trigger to auto-fill the topic and generate instantly</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <button class="btn btn-g btn-sm" onclick="quickGen('I just deployed a new feature for a client. It works perfectly. Share the win.')">🚀 I just shipped</button>
+          <button class="btn btn-g btn-sm" onclick="quickGen('I hit a difficult bug today and spent hours fixing it. Share what I learned.')">🐛 Bug I fixed</button>
+          <button class="btn btn-g btn-sm" onclick="quickGen('A client asked me a question I needed to think about. Share my answer as value.')">💡 Client insight</button>
+          <button class="btn btn-g btn-sm" onclick="quickGen('I built something using AI that used to take hours. Build-in-public update.')">⚡ AI-assisted build</button>
+          <button class="btn btn-g btn-sm" onclick="quickGen('Sastech Consults website services starting at ₦150,000. Promote the service professionally.')">💰 Promo post</button>
+          <button class="btn btn-g btn-sm" onclick="quickGen('I learned something important about building as a Nigerian developer. Personal lesson.')">🎓 Lesson learned</button>
+          <button class="btn btn-g btn-sm" onclick="quickGen('I am building Jarvis OS — a personal AI business OS. Build-in-public weekly update.')">🤖 Jarvis OS update</button>
+          <button class="btn btn-g btn-sm" onclick="quickGen('A week in review building Sastech and personal projects. What shipped, what did not, honest update.')">📆 Week wrap</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ BLOG EDITOR ════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-blog">
+      <div class="grid2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="card-title">Generate Blog Post with AI</div>
+          <div class="field">
+            <label>Article Topic</label>
+            <input type="text" id="blog-topic" placeholder="e.g. How to build a WhatsApp chatbot for a Nigerian business in 2026">
+          </div>
+          <div class="field">
+            <label>Target Audience</label>
+            <select id="blog-audience">
+              <option>Nigerian SME owners (non-technical)</option>
+              <option>Nigerian developers</option>
+              <option>International tech employers</option>
+              <option>Startup founders</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Article Length</label>
+            <select id="blog-length">
+              <option value="800">Short — 800 words (quick read)</option>
+              <option value="1200" selected>Medium — 1,200 words (standard)</option>
+              <option value="2000">Long — 2,000+ words (deep dive)</option>
+            </select>
+          </div>
+          <button class="btn btn-t" onclick="generateBlog()">✨ Generate Article</button>
+          <div class="ai-thinking" id="think-blog"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>Writing article...</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">SEO Checklist</div>
+          <div style="display:flex;flex-direction:column;gap:7px;font-size:13px">
+            <div id="seo-title" style="color:var(--s)">⬜ Title contains primary keyword</div>
+            <div id="seo-meta" style="color:var(--s)">⬜ Meta description written (150 chars)</div>
+            <div id="seo-h2" style="color:var(--s)">⬜ At least 3 H2 subheadings</div>
+            <div id="seo-code" style="color:var(--s)">⬜ Code snippet or visual included</div>
+            <div id="seo-cta" style="color:var(--s)">⬜ CTA links to sastechconsults@gmail.com</div>
+            <div id="seo-len" style="color:var(--s)">⬜ 800+ words</div>
+          </div>
+          <div style="margin-top:12px">
+            <div style="font-size:11px;color:var(--s);margin-bottom:4px">Quick SEO title generator</div>
+            <input type="text" id="seo-kw" placeholder="Enter your main keyword" style="margin-bottom:6px">
+            <button class="btn btn-g btn-sm" onclick="genSEOTitle()">Generate SEO Title</button>
+            <div id="seo-out" style="display:none;margin-top:8px;padding:8px;background:var(--nl);border-radius:6px;font-size:12px;color:var(--t)"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="editor card">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0">
+          <div>
+            <input type="text" id="blog-title-input" placeholder="Article title..." style="border:none;background:transparent;font-size:18px;font-weight:600;color:var(--w);padding:0;width:100%">
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="btn btn-g btn-sm" onclick="copyBlog()">📋 Copy All</button>
+            <button class="btn btn-t btn-sm" onclick="markdownExport()">⬇️ Export .md</button>
+          </div>
+        </div>
+        <div class="editor-toolbar">
+          <button class="tb-btn" onclick="ins('**','**')"><b>B</b></button>
+          <button class="tb-btn" onclick="ins('*','*')"><i>I</i></button>
+          <button class="tb-btn" onclick="ins('## ','')">H2</button>
+          <button class="tb-btn" onclick="ins('### ','')">H3</button>
+          <button class="tb-btn" onclick="ins('\n```\n','\n```\n')">Code</button>
+          <button class="tb-btn" onclick="ins('\n- ','')">List</button>
+          <button class="tb-btn" onclick="ins('[','](url)')">Link</button>
+          <button class="tb-btn" onclick="ins('> ','')">Quote</button>
+        </div>
+        <textarea id="editor-body" placeholder="Start writing or generate with AI above...
+
+Use markdown:
+## Heading
+**bold** *italic*
+- bullet point
+\`inline code\`
+```code block```
+
+Your article will appear here when generated."></textarea>
+      </div>
+    </div>
+
+    <!-- ══ VIDEO SCRIPTS ════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-video">
+      <div class="card">
+        <div class="card-title">Generate Video Script</div>
+        <div class="card-sub">AI writes ready-to-record scripts for TikTok, Reels, YouTube Shorts, or YouTube long-form</div>
+        <div class="grid2">
+          <div>
+            <div class="field">
+              <label>What is the video about?</label>
+              <textarea id="v-topic" rows="2" placeholder="e.g. I built a website for a Lagos accounting firm in 7 days. Show the process and result."></textarea>
+            </div>
+            <div class="field">
+              <label>Video Format</label>
+              <select id="v-format">
+                <option value="tiktok">TikTok / Reels (30–60 sec)</option>
+                <option value="short">YouTube Shorts (60 sec)</option>
+                <option value="tutorial">Tutorial (3–5 min)</option>
+                <option value="ad15">Ad (15 sec)</option>
+                <option value="overview">Company overview (90 sec)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Include CTA to</label>
+              <select id="v-cta">
+                <option>WhatsApp +2348022324523</option>
+                <option>Follow @samuelsholarin</option>
+                <option>Book discovery call</option>
+                <option>Visit sasdev.com</option>
+              </select>
+            </div>
+            <button class="btn btn-t" onclick="generateVideo()">🎬 Generate Script</button>
+            <div class="ai-thinking" id="think-video"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>Writing script...</span></div>
+          </div>
+          <div>
+            <div class="ai-out show" id="v-out" style="max-height:320px">
+Click "Generate Script" to get your ready-to-record video script.
+
+The script will include:
+• Scene-by-scene direction
+• Exact words to say
+• Text overlay suggestions
+• Music/tone direction
+• CTA at the end
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button class="btn btn-g btn-sm" onclick="copyEl('v-out')">📋 Copy Script</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quick Script Templates</div>
+        <div class="grid3">
+          <div style="background:var(--nl);border-radius:8px;padding:12px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--t)">🚀 "I Built X in Y"</div>
+            <div style="font-size:11px;color:var(--s);line-height:1.6">Open with result on screen → show it working → explain one key thing → CTA to follow</div>
+            <button class="btn btn-g btn-sm" style="margin-top:8px;width:100%" onclick="quickVideo('I built X in Y minutes using AI. Show the impressive result immediately then explain how.')">Use Template</button>
+          </div>
+          <div style="background:var(--nl);border-radius:8px;padding:12px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--t)">⚡ Service Demo</div>
+            <div style="font-size:11px;color:var(--s);line-height:1.6">Show a Sastech service in action with real screen recording. Hook with the outcome first.</div>
+            <button class="btn btn-g btn-sm" style="margin-top:8px;width:100%" onclick="quickVideo('Demo video showing an AI chatbot for a Nigerian business handling real customer questions automatically.')">Use Template</button>
+          </div>
+          <div style="background:var(--nl);border-radius:8px;padding:12px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--t)">💰 Price Reveal</div>
+            <div style="font-size:11px;color:var(--s);line-height:1.6">Show what a website / chatbot / app costs and the ROI it delivers. Transparent pricing content.</div>
+            <button class="btn btn-g btn-sm" style="margin-top:8px;width:100%" onclick="quickVideo('Video revealing the exact cost of building a professional website in Nigeria and the ROI for the business.')">Use Template</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PORTFOLIO ═══════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-portfolio">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div><div style="font-weight:600">Your Projects</div><div style="color:var(--s);font-size:12px">Click any project to generate a case study, LinkedIn post, or portfolio write-up</div></div>
+        <button class="btn btn-t btn-sm" onclick="addProject()">+ Add Project</button>
+      </div>
+      <div id="project-list"></div>
+    </div>
+
+    <!-- ══ CONTENT PIPELINE ════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-pipeline">
+      <div class="grid3" style="margin-bottom:16px">
+        <div class="stat"><div class="stat-num" id="stat-ideas">0</div><div class="stat-label">Content Ideas</div></div>
+        <div class="stat"><div class="stat-num" id="stat-draft">0</div><div class="stat-label">Drafts Ready</div></div>
+        <div class="stat"><div class="stat-num" id="stat-pub">0</div><div class="stat-label">Published</div></div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input type="text" id="idea-input" placeholder="Add content idea..." style="flex:1">
+          <select id="idea-platform" style="width:130px">
+            <option>LinkedIn</option><option>Twitter/X</option><option>TikTok</option><option>Blog</option><option>YouTube</option>
+          </select>
+          <button class="btn btn-t" onclick="addIdea()">Add</button>
+        </div>
+        <table class="tbl" id="ideas-table">
+          <thead><tr><th>Idea</th><th>Platform</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="ideas-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ COMMUNITY SETUP ════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-community">
+      <div class="card">
+        <div class="card-title">Step-by-Step Community Setup Guide</div>
+        <div class="card-sub">Build a community around your work as a Nigerian AI developer</div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          <div id="comm-steps"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LEAD FINDER & OUTREACH ══════════════════════════════════ -->
+    <div class="tab-panel" id="tab-outreach">
+
+      <!-- Search Criteria -->
+      <div class="card">
+        <div class="card-title">🎯 Find Leads to Reach Out To</div>
+        <div class="card-sub">Describe who you want to contact — AI will find tailored prospects you can DM, email, or call directly</div>
+        <div class="grid2">
+          <div>
+            <div class="field">
+              <label>Industry / Niche</label>
+              <select id="lead-industry">
+                <option value="accounting">Accounting / Finance firms</option>
+                <option value="law">Law firms</option>
+                <option value="realestate">Real estate agencies</option>
+                <option value="healthcare">Healthcare / Clinics</option>
+                <option value="logistics">Logistics / Haulage</option>
+                <option value="education">Education / Schools</option>
+                <option value="ecommerce">E-commerce / Retail</option>
+                <option value="hospitality">Hotels / Restaurants</option>
+                <option value="construction">Construction companies</option>
+                <option value="agriculture">Agriculture / Agritech</option>
+                <option value="startup">Tech startups</option>
+                <option value="custom">Custom (describe below)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Location</label>
+              <select id="lead-location">
+                <option value="Lagos, Nigeria">Lagos, Nigeria</option>
+                <option value="Abuja, Nigeria">Abuja, Nigeria</option>
+                <option value="Port Harcourt, Nigeria">Port Harcourt, Nigeria</option>
+                <option value="Nigeria (all cities)">Nigeria (all cities)</option>
+                <option value="West Africa">West Africa</option>
+                <option value="Africa">Africa (continent)</option>
+                <option value="United States">United States</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="Global">Global / Remote</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label>Decision Maker Role</label>
+              <select id="lead-role">
+                <option value="owner">Business Owner / Founder</option>
+                <option value="ceo">CEO / Managing Director</option>
+                <option value="cto">CTO / Tech Lead</option>
+                <option value="marketing">Marketing Manager / CMO</option>
+                <option value="operations">Operations Manager / COO</option>
+                <option value="hr">HR Manager</option>
+                <option value="any">Any decision maker</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>What do you want to sell them?</label>
+              <select id="lead-service">
+                <option value="website">Website / Web app development</option>
+                <option value="chatbot">AI Chatbot / WhatsApp automation</option>
+                <option value="automation">Business process automation</option>
+                <option value="app">Mobile app development</option>
+                <option value="ai">AI/ML integration</option>
+                <option value="consulting">Tech consulting</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Custom Details (optional)</label>
+              <input type="text" id="lead-custom" placeholder="e.g. firms with no website, or startups hiring developers">
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-t" onclick="findLeads()">🔍 Find Leads</button>
+              <button class="btn btn-g" onclick="findLeads(true)">🔄 Find More</button>
+            </div>
+          </div>
+        </div>
+        <div class="ai-thinking" id="think-leads"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>Finding prospects...</span></div>
+      </div>
+
+      <!-- Results -->
+      <div class="card" id="leads-results" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card-title">📋 Found Prospects</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-g btn-sm" onclick="saveAllLeads()">💾 Save All</button>
+            <button class="btn btn-g btn-sm" onclick="exportLeadsCSV()">📥 Export CSV</button>
+          </div>
+        </div>
+        <div id="leads-table-wrap" style="overflow-x:auto"></div>
+      </div>
+
+      <!-- Outreach Generator for selected lead -->
+      <div class="card" id="lead-outreach-card" style="display:none">
+        <div class="card-title" id="outreach-for-name">✉️ Generate Outreach</div>
+        <div class="grid2">
+          <div>
+            <div class="field">
+              <label>Channel</label>
+              <select id="outreach-channel">
+                <option value="whatsapp">WhatsApp DM</option>
+                <option value="linkedin">LinkedIn DM</option>
+                <option value="email">Cold Email</option>
+                <option value="instagram">Instagram DM</option>
+                <option value="twitter">Twitter/X DM</option>
+              </select>
+            </div>
+            <button class="btn btn-t" onclick="generateLeadOutreach()">✨ Generate Message</button>
+            <div class="ai-thinking" id="think-lead-out"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>Writing outreach...</span></div>
+          </div>
+          <div>
+            <div class="ai-out show" id="lead-out-msg" style="min-height:120px;max-height:280px">Select a lead and generate a personalised message.</div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button class="btn btn-g btn-sm" onclick="copyEl('lead-out-msg')">📋 Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved Leads -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div>
+            <div class="card-title">💾 Saved Leads</div>
+            <div class="card-sub" style="margin-bottom:0">Your prospect list — click any contact link to reach out</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select id="saved-filter" onchange="renderSavedLeads()" style="width:130px;padding:6px 10px;font-size:11px">
+              <option value="all">All statuses</option>
+              <option value="new">🟢 New</option>
+              <option value="contacted">🟡 Contacted</option>
+              <option value="responded">🔵 Responded</option>
+              <option value="client">⭐ Client</option>
+              <option value="lost">⚫ Lost</option>
+            </select>
+            <span id="saved-count" class="badge b-t">0</span>
+          </div>
+        </div>
+        <div id="saved-leads-wrap"></div>
+      </div>
+
+    </div>
+
+    <!-- ══ AUTOMATION GUIDE ════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-automation">
+      <div class="card">
+        <div class="card-title">Content Automation Workflows</div>
+        <div class="card-sub">n8n + AI workflows that automate your content creation and distribution</div>
+        <div id="auto-workflows"></div>
+      </div>
+    </div>
+
+    <!-- ══ DM TEMPLATES ═══════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-templates">
+      <div id="template-list"></div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const ME = {
+  name: 'Samuel Ayomide',
+  company: 'Sastech Consults',
+  wa: '+2348022324523',
+  email: 'ayomidesholarin13@gmail.com',
+  social: '@samuelsholarin',
+  site: 'sasdev.com',
+};
+
+// ─── NAV ──────────────────────────────────────────────────────────────────────
+const panels = {
+  writer:    {title:'AI Post Writer',     sub:'Generate ready-to-post content for any platform'},
+  blog:      {title:'Blog Editor',        sub:'Write and export articles for sasdev.com'},
+  video:     {title:'Video Scripts',      sub:'Generate scripts for TikTok, Reels, and YouTube'},
+  portfolio: {title:'Portfolio Projects', sub:'Manage projects and generate case studies'},
+  pipeline:  {title:'Content Pipeline',   sub:'Track ideas from draft to published'},
+  community: {title:'Community Setup',    sub:'Step-by-step guide to building your audience'},
+  outreach:  {title:'Lead Finder',      sub:'Find prospects, reach out directly via WhatsApp, LinkedIn, or email'},
+  automation:{title:'Automation Guide',   sub:'n8n workflows to automate your content engine'},
+  templates: {title:'DM Templates',       sub:'Ready-to-copy outreach messages for every context'},
+};
+function show(id){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{if(n.getAttribute('onclick')?.includes("'"+id+"'"))n.classList.add('active');});
+  document.getElementById('tb-title').textContent = panels[id].title;
+  document.getElementById('tb-sub').textContent = panels[id].sub;
+  if(id==='community') renderCommunity();
+  if(id==='outreach') renderSavedLeads();
+  if(id==='automation') renderAutomation();
+  if(id==='templates') renderTemplates();
+  if(id==='portfolio') renderPortfolio();
+  if(id==='pipeline') renderPipeline();
+}
+
+// ─── AI CALL (via secure backend proxy) ──────────────────────────────────────
+async function callAI(prompt) {
+  try {
+    const res = await fetch('/api/generate-content', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ prompt, max_tokens: 1200 })
+    });
+    const data = await res.json();
+
+    // Handle specific error codes
+    if (!res.ok) {
+      if (data.code === 'ALL_MODELS_EXHAUSTED') {
+        showToast('⚠️ All free AI models exhausted. Try again in a few minutes.', 'error');
+        return null;
+      }
+      if (res.status === 429) {
+        showToast('⚠️ Rate limited. Wait 30 seconds and try again.', 'error');
+        return null;
+      }
+      if (res.status === 402) {
+        showToast('⚠️ AI credits depleted. Check OpenRouter dashboard.', 'error');
+        return null;
+      }
+      showToast('AI error: ' + (data.error || 'Unknown error'), 'error');
+      return null;
+    }
+
+    if (data.model) {
+      console.log('Used model:', data.model);
+    }
+    return data.text || null;
+  } catch(e) {
+    showToast('Network error. Check your connection.', 'error');
+    return null;
+  }
+}
+
+// ─── POST WRITER ─────────────────────────────────────────────────────────────
+let currentPlatform = 'linkedin';
+function setPlatform(btn, p){
+  document.querySelectorAll('#w-platform .ptab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPlatform = p;
+}
+function quickGen(topic){ document.getElementById('w-topic').value = topic; generatePost(); }
+
+async function generatePost() {
+  const topic = document.getElementById('w-topic').value.trim();
+  const type  = document.getElementById('w-type').value;
+  const tone  = document.getElementById('w-tone').value;
+  if(!topic){alert('Please describe what you want to post about.');return;}
+
+  const think = document.getElementById('think1');
+  const out   = document.getElementById('post-out');
+  const ph    = document.getElementById('post-placeholder');
+  const btn   = document.getElementById('copy-btn');
+  think.classList.add('show');
+  out.classList.remove('show');
+  ph.style.display='none';
+
+  const platformGuides = {
+    linkedin: 'LinkedIn post: hook first line (no soft intros), blank line, body in short paragraphs, insight, ONE clear CTA, 3-5 hashtags. Max 1300 chars.',
+    twitter:  'Single punchy tweet under 280 chars OR a thread of 5-7 tweets numbered 1/N. Thread format: hook → points → CTA.',
+    tiktok:   '30-60 second TikTok script with second-by-second direction: 0-3s hook showing result, 3-20s demo, 20-45s explanation, 45-60s CTA.',
+    blog:     'Blog post outline: SEO title, meta description (150 chars), intro paragraph, 3-4 H2 sections, conclusion, CTA to contact Sastech Consults.',
+    thread:   'Twitter/LinkedIn thread. First post is hook, 5-7 posts each a single valuable point, last post is CTA to follow or contact.',
+  };
+
+  const prompt = `You are writing content for ${ME.name}, founder of ${ME.company}, an AI systems architect from Lagos, Nigeria.
+
+Topic to write about: ${topic}
+Post type: ${type}
+Tone: ${tone}
+Platform format: ${platformGuides[currentPlatform]}
+
+Rules:
+- Write in Samuel's voice: direct, confident, Nigerian developer
+- Never use "leverage", "cutting-edge", "innovative solutions", "paradigm"
+- Include specific numbers, tools, and prices where relevant
+- Nigerian context where appropriate (mention Paystack, Lagos, WhatsApp if relevant)
+- End with: ${ME.wa} or ${ME.social} or ${ME.site} depending on post type
+- Include relevant hashtags from: #BuildInPublic #AIinAfrica #TechNigeria #LagosTech #SastechConsults #NigerianDeveloper
+
+IMPORTANT: At the very end, after the post content, add this section:
+
+---
+🖼️ IMAGE PROMPT (copy this into any AI image generator):
+[Write a detailed image generation prompt that would create a perfect visual for this specific post. Include: subject matter, style (modern tech, dark background, vibrant accents), mood, composition. Make it specific to the post content, not generic.]
+---
+
+Write the complete ready-to-post content now. No preamble, just the content.`;
+
+  try {
+    const result = await callAI(prompt);
+    think.classList.remove('show');
+
+    if (!result) {
+      // AI failed — show helpful fallback
+      out.textContent = `[AI unavailable — use this template]\n\n[Hook: State your result in first line]\n\n[Body: ${topic}]\n\n[Insight: What this means for your audience]\n\nDM me: ${ME.wa}\n\n#BuildInPublic #TechNigeria #LagosTech\n\n---\n🖼️ IMAGE PROMPT (copy into ChatGPT, Bing Image Creator, or ideogram.ai — all FREE):\nProfessional ${currentPlatform} social media graphic about ${topic.substring(0,100)}. Dark tech background (#0a1128), vibrant cyan (#00c2ff) and purple (#7c5cfc) accent lighting, clean minimal composition, modern flat illustration style, no text overlay, 16:9 aspect ratio.\n---`;
+      out.classList.add('show');
+      ph.style.display='none';
+      btn.style.display='inline-flex';
+      // Still show image gen area with prompt
+      const imgArea = document.getElementById('img-gen-post');
+      imgArea.classList.add('show');
+      document.getElementById('img-prompt').value = `Professional ${currentPlatform} graphic about: ${topic.substring(0,150)}. Modern dark tech aesthetic, vibrant cyan and purple gradients, clean minimal design, no visible text, high quality`;
+      return;
+    }
+
+    out.textContent = result;
+    out.classList.add('show');
+    btn.style.display='inline-flex';
+    // Show image generation area with auto-filled prompt
+    const imgArea = document.getElementById('img-gen-post');
+    imgArea.classList.add('show');
+    // Extract image prompt from AI output if present
+    const imgMatch = result.match(/IMAGE PROMPT.*?:\s*\n([\s\S]*?)(?:\n---|\n$|$)/i);
+    const autoPrompt = imgMatch ? imgMatch[1].trim() : `Professional ${currentPlatform} graphic about: ${topic.substring(0,150)}. Modern dark tech aesthetic, vibrant cyan and purple gradients, clean minimal design, no visible text, high quality`;
+    document.getElementById('img-prompt').value = autoPrompt;
+    showToast('Content + image prompt generated!', 'success');
+  } catch(e) {
+    think.classList.remove('show');
+    out.textContent = `Generation failed. Error: ${e.message}\n\nTry again in a moment, or use this template:\n\n[Hook about: ${topic}]\n[Body]\n[CTA: ${ME.wa}]\n\n---\n🖼️ IMAGE PROMPT (use at ideogram.ai, bing.com/create, or chatgpt.com — FREE):\nProfessional ${currentPlatform} social media graphic about ${topic.substring(0,80)}. Dark tech background, cyan and purple neon accents, minimal composition, no text, 16:9.\n---`;
+    out.classList.add('show');
+    btn.style.display='inline-flex';
+    ph.style.display='none';
+  }
+}
+
+function copyOutput(){
+  const out = document.getElementById('post-out');
+  navigator.clipboard.writeText(out.textContent).then(()=>{
+    document.getElementById('copy-btn').textContent='✅ Copied!';
+    setTimeout(()=>{document.getElementById('copy-btn').textContent='📋 Copy';},2000);
+  });
+}
+
+// ─── BLOG ─────────────────────────────────────────────────────────────────────
+async function generateBlog(){
+  const topic = document.getElementById('blog-topic').value.trim();
+  const audience = document.getElementById('blog-audience').value;
+  const length = document.getElementById('blog-length').value;
+  if(!topic){alert('Enter an article topic.');return;}
+
+  const think = document.getElementById('think-blog');
+  think.classList.add('show');
+
+  const prompt = `Write a complete ${length}-word blog article for ${ME.name}, founder of ${ME.company} (sastechconsults@gmail.com).
+
+Topic: ${topic}
+Audience: ${audience}
+Author voice: Nigerian AI developer from Lagos, expert but approachable, uses specific examples and real numbers.
+
+Structure:
+- SEO-optimised title (put on first line as: TITLE: [title])
+- Meta description 150 chars (second line as: META: [description])
+- Introduction that hooks with a specific problem or surprising fact
+- 3-4 H2 sections (use ## for H2)
+- Include at least one practical code snippet or numbered process if technical
+- Nigeria-specific context where relevant (Paystack, Lagos, WATI, naira prices)
+- Conclusion with clear CTA to contact Sastech Consults at ${ME.email}
+
+Write the full article now.`;
+
+  try {
+    const result = await callAI(prompt);
+    think.classList.remove('show');
+    if (!result) {
+      document.getElementById('editor-body').value = 'AI unavailable — please try again in a moment, or write your article manually using the editor below.';
+      return;
+    }
+    const lines = result.split('\n');
+    let title = '', meta = '', body = result;
+    for(const l of lines){
+      if(l.startsWith('TITLE:')){ title = l.replace('TITLE:','').trim(); }
+      if(l.startsWith('META:')){ meta = l.replace('META:','').trim(); }
+    }
+    if(title) document.getElementById('blog-title-input').value = title;
+    document.getElementById('editor-body').value = result;
+    // Update SEO checklist
+    document.getElementById('seo-title').style.color = title ? '#4ADE80' : 'var(--s)';
+    document.getElementById('seo-title').textContent = (title?'✅':'⬜') + ' Title contains primary keyword';
+    document.getElementById('seo-meta').style.color = meta ? '#4ADE80' : 'var(--s)';
+    document.getElementById('seo-meta').textContent = (meta?'✅':'⬜') + ' Meta description written (150 chars)';
+    const hasH2 = (result.match(/^## /gm)||[]).length >= 3;
+    document.getElementById('seo-h2').style.color = hasH2 ? '#4ADE80' : 'var(--s)';
+    document.getElementById('seo-h2').textContent = (hasH2?'✅':'⬜') + ' At least 3 H2 subheadings';
+    const hasCode = result.includes('```');
+    document.getElementById('seo-code').style.color = hasCode ? '#4ADE80' : 'var(--s)';
+    document.getElementById('seo-code').textContent = (hasCode?'✅':'⬜') + ' Code snippet or visual included';
+    const hasCTA = result.includes(ME.email) || result.includes(ME.wa);
+    document.getElementById('seo-cta').style.color = hasCTA ? '#4ADE80' : 'var(--s)';
+    document.getElementById('seo-cta').textContent = (hasCTA?'✅':'⬜') + ' CTA links to Sastech Consults';
+    const wordCount = result.split(' ').length;
+    document.getElementById('seo-len').style.color = wordCount >= 800 ? '#4ADE80' : 'var(--s)';
+    document.getElementById('seo-len').textContent = (wordCount>=800?'✅':'⬜') + ` ${wordCount} words`;
+  } catch(e){
+    think.classList.remove('show');
+    document.getElementById('editor-body').value = 'Failed to generate. Please try again or write manually.';
+  }
+}
+
+function genSEOTitle(){
+  const kw = document.getElementById('seo-kw').value.trim();
+  if(!kw)return;
+  const templates = [
+    `How to ${kw} in Nigeria (2026 Complete Guide)`,
+    `${kw}: What Every Nigerian Business Owner Needs to Know`,
+    `The Complete Guide to ${kw} for Lagos Businesses`,
+    `${kw} — A Nigerian Developer's Honest Take`,
+    `Why Your Nigerian Business Needs ${kw} Right Now`,
+  ];
+  const out = document.getElementById('seo-out');
+  out.style.display='block';
+  out.innerHTML = templates.map(t=>`<div style="padding:4px 0;cursor:pointer;border-bottom:1px solid var(--p)" onclick="document.getElementById('blog-title-input').value='${t}'">${t}</div>`).join('');
+}
+
+function ins(before,after){
+  const ta=document.getElementById('editor-body');
+  const s=ta.selectionStart,e=ta.selectionEnd;
+  const sel=ta.value.substring(s,e);
+  ta.value=ta.value.substring(0,s)+before+sel+after+ta.value.substring(e);
+  ta.focus();ta.setSelectionRange(s+before.length,s+before.length+sel.length);
+}
+function copyBlog(){navigator.clipboard.writeText(document.getElementById('editor-body').value).then(()=>alert('Article copied to clipboard!'));}
+function markdownExport(){
+  const title=document.getElementById('blog-title-input').value||'article';
+  const body=document.getElementById('editor-body').value;
+  const blob=new Blob([`# ${title}\n\n${body}`],{type:'text/markdown'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=title.replace(/\s+/g,'-').toLowerCase()+'.md';a.click();
+}
+
+// ─── VIDEO ────────────────────────────────────────────────────────────────────
+function quickVideo(t){document.getElementById('v-topic').value=t;generateVideo();}
+async function generateVideo(){
+  const topic=document.getElementById('v-topic').value.trim();
+  const format=document.getElementById('v-format').value;
+  const cta=document.getElementById('v-cta').value;
+  if(!topic){alert('Describe the video topic.');return;}
+  const think=document.getElementById('think-video');
+  const out=document.getElementById('v-out');
+  think.classList.add('show');
+
+  const fmts={
+    tiktok:'30-60 second TikTok/Reels script. Second-by-second breakdown. Show result in first 3 seconds.',
+    short:'YouTube Shorts 60 seconds. Fast paced. Value in first 5 seconds.',
+    tutorial:'5-minute tutorial. Clear step-by-step. Show real screen. Teach something actionable.',
+    ad15:'15-second non-skippable ad. Problem → solution → CTA. No soft intro.',
+    overview:'90-second company overview video. Problem → Samuel → Sastech → services → CTA.',
+  };
+
+  const prompt=`Write a complete video script for ${ME.name}, founder of ${ME.company} from Lagos, Nigeria.
+
+Topic: ${topic}
+Format: ${fmts[format]}
+CTA at end: ${cta}
+
+Include:
+- [VISUAL] directions for each scene
+- Exact VO (voice over) words
+- TEXT OVERLAY suggestions
+- Music/tone direction at start
+- End card specification
+
+Keep the voice casual, confident, and Nigerian. Show results first. Never start with "Hi my name is..."
+Write the complete script now.`;
+
+  try{const r=await callAI(prompt);think.classList.remove('show');out.textContent=r||'AI unavailable — please try again in a moment.';}
+  catch(e){think.classList.remove('show');out.textContent='Failed to generate script. Please try again.';}
+}
+function copyEl(id){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>alert('Copied!'));}
+
+// ─── PORTFOLIO ────────────────────────────────────────────────────────────────
+const DEFAULT_PROJECTS=[
+  {name:'AgentDesk',desc:'Multi-tenant AI agent platform — production at Trucksoft Limited',stack:'Python, FastAPI, LangGraph, Supabase',status:'live',type:'AI Platform'},
+  {name:'Kamilight AI System',desc:'Complete AI communication & automation for Pan-African freight company',stack:'n8n, WhatsApp API, Google Sheets, Telegram Bot',status:'live',type:'Automation'},
+  {name:'Jarvis OS',desc:'Personal AI Business OS — CTO, CMO, CFO, COO agents',stack:'FastAPI, LangGraph, CrewAI, Temporal',status:'building',type:'AI OS'},
+  {name:'ReachOS',desc:'AI CRM platform — 10 sub-agents for lead-to-customer automation',stack:'FastAPI, n8n, Retell AI, ElevenLabs',status:'building',type:'SaaS'},
+  {name:'Sastech Website',desc:'Company consultancy website with quote calculator and intake form',stack:'HTML, React, Vercel',status:'live',type:'Web'},
+];
+function getProjects(){return JSON.parse(localStorage.getItem('sc_projects')||JSON.stringify(DEFAULT_PROJECTS));}
+function saveProjects(p){localStorage.setItem('sc_projects',JSON.stringify(p));}
+
+function renderPortfolio(){
+  const projects=getProjects();
+  const el=document.getElementById('project-list');
+  if(!projects.length){el.innerHTML='<div style="color:var(--s);text-align:center;padding:40px">No projects yet. Click "+ Add Project" to add one.</div>';return;}
+  el.innerHTML=projects.map((p,i)=>`
+    <div class="card" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <div style="font-weight:600;font-size:14px">${p.name}</div>
+          <span class="badge ${p.status==='live'?'b-grn':p.status==='building'?'b-t':'b-gray'}">${p.status}</span>
+          <span class="badge b-gray">${p.type}</span>
+        </div>
+        <div style="color:var(--s);font-size:12px;margin-bottom:6px">${p.desc}</div>
+        <div style="color:var(--t);font-size:11px">Stack: ${p.stack}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-t btn-sm" onclick="genCaseStudy(${i})">✨ Case Study</button>
+        <button class="btn btn-g btn-sm" onclick="deleteProject(${i})">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addProject(){
+  const name=prompt('Project name:');
+  if(!name)return;
+  const desc=prompt('Brief description:');
+  const stack=prompt('Tech stack used:');
+  const projects=getProjects();
+  projects.unshift({name,desc:desc||'',stack:stack||'',status:'building',type:'Project'});
+  saveProjects(projects);
+  renderPortfolio();
+}
+
+function deleteProject(i){
+  if(!confirm('Remove this project?'))return;
+  const p=getProjects();p.splice(i,1);saveProjects(p);renderPortfolio();
+}
+
+async function genCaseStudy(i){
+  const p=getProjects()[i];
+  const prompt=`Write a professional case study for ${ME.name}'s portfolio at ${ME.site}.
+
+Project: ${p.name}
+Description: ${p.desc}
+Stack: ${p.stack}
+Status: ${p.status}
+
+Write in this format:
+1. The Problem (2-3 sentences — what pain existed before this was built)
+2. The Solution (what ${ME.name} built and how)
+3. Technical Implementation (key decisions, architecture, tools used)
+4. Results & Impact (specific outcomes if known, or expected outcomes)
+5. LinkedIn Post (ready to share — 2-3 paragraphs with hook, story, CTA)
+
+Keep it honest, specific, and compelling. Include ${ME.email} as CTA contact.`;
+
+  const win=window.open('','_blank');
+  win.document.write('<pre style="background:#0D1B2A;color:#00B4C8;padding:20px;font-family:monospace;white-space:pre-wrap">Generating case study...</pre>');
+  try{
+    const r=await callAI(prompt);
+    win.document.body.innerHTML=`<pre style="background:#0D1B2A;color:#e2e8f0;padding:20px;font-family:monospace;font-size:13px;line-height:1.7;white-space:pre-wrap">${r}</pre>`;
+  }catch(e){win.document.body.innerHTML='<pre style="color:red;padding:20px">Error generating case study.</pre>';}
+}
+
+// ─── PIPELINE ─────────────────────────────────────────────────────────────────
+function getIdeas(){return JSON.parse(localStorage.getItem('sc_ideas')||'[]');}
+function saveIdeas(i){localStorage.setItem('sc_ideas',JSON.stringify(i));}
+
+function addIdea(){
+  const v=document.getElementById('idea-input').value.trim();
+  const p=document.getElementById('idea-platform').value;
+  if(!v)return;
+  const ideas=getIdeas();
+  ideas.unshift({text:v,platform:p,status:'idea',created:new Date().toLocaleDateString()});
+  saveIdeas(ideas);
+  document.getElementById('idea-input').value='';
+  renderPipeline();
+}
+
+function renderPipeline(){
+  const ideas=getIdeas();
+  document.getElementById('stat-ideas').textContent=ideas.filter(i=>i.status==='idea').length;
+  document.getElementById('stat-draft').textContent=ideas.filter(i=>i.status==='draft').length;
+  document.getElementById('stat-pub').textContent=ideas.filter(i=>i.status==='published').length;
+  const body=document.getElementById('ideas-body');
+  if(!ideas.length){body.innerHTML='<tr><td colspan="4" style="color:var(--s);text-align:center;padding:20px">No ideas yet. Add one above.</td></tr>';return;}
+  body.innerHTML=ideas.map((idea,i)=>`
+    <tr>
+      <td>${idea.text}</td>
+      <td><span class="badge b-t" style="font-size:10px">${idea.platform}</span></td>
+      <td><span class="badge ${idea.status==='idea'?'b-gray':idea.status==='draft'?'b-g':'b-grn'}">${idea.status}</span></td>
+      <td style="display:flex;gap:4px">
+        ${idea.status!=='published'?`<button class="btn btn-g btn-sm" onclick="advanceIdea(${i})">→</button>`:''}
+        <button class="btn btn-t btn-sm" onclick="ideaToPost('${idea.text.replace(/'/g,"\\'")}','${idea.platform}')">✨</button>
+        <button class="btn btn-g btn-sm" onclick="deleteIdea(${i})">×</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function advanceIdea(i){
+  const ideas=getIdeas();
+  const map={idea:'draft',draft:'published'};
+  if(map[ideas[i].status])ideas[i].status=map[ideas[i].status];
+  saveIdeas(ideas);renderPipeline();
+}
+function deleteIdea(i){const ideas=getIdeas();ideas.splice(i,1);saveIdeas(ideas);renderPipeline();}
+function ideaToPost(text,platform){
+  document.getElementById('w-topic').value=text;
+  const ptabs=document.querySelectorAll('#w-platform .ptab');
+  ptabs.forEach(b=>{b.classList.remove('active');if(b.textContent.toLowerCase().includes(platform.toLowerCase().split('/')[0]))b.classList.add('active');});
+  currentPlatform=platform.toLowerCase().includes('linked')?'linkedin':platform.toLowerCase().includes('twitter')?'twitter':'tiktok';
+  show('writer');generatePost();
+}
+
+// ─── COMMUNITY ────────────────────────────────────────────────────────────────
+function renderCommunity(){
+  const steps=[
+    {num:1,title:'Start on LinkedIn (Week 1)',desc:'Your most important platform. Turn on Creator Mode in Settings. This unlocks analytics, newsletter, and the "Follow" button. Post your intro: "I am an AI developer from Lagos. Here is what I build." Tag 3 people you know. Share in 2 LinkedIn groups (Nigerian Tech, AI Professionals).'},
+    {num:2,title:'Build a Twitter/X Presence (Week 1)',desc:'Write and pin your intro thread. Follow 50 AI developers, Nigerian tech builders, and startup founders. Reply to 5 posts per day with genuine technical value — not "great post!" Retweet with your own commentary. 200 followers by end of month 1 is achievable with daily posting.'},
+    {num:3,title:'Create a WhatsApp Broadcast List (Week 2)',desc:'Go to WhatsApp → New Broadcast. Add every contact who might be interested in tech or business updates. Send weekly updates: a project you shipped, a useful tip, a service announcement. This is your most direct channel to Nigerian clients. Keep it to 1-2 messages per week.'},
+    {num:4,title:'Join and Add Value in Existing Communities (Week 2)',desc:'Ingressive For Good: ingressive.org/community. DevCareer: discord.gg/devcareer. Naija Founders: naijafounders.com. SheCodeAfrica Ally channel. Twitter/X Nigerian Tech community (search #TechNigeria). Rule: give value for 30 days before you promote anything.'},
+    {num:5,title:'Start a Newsletter (Month 2)',desc:'LinkedIn Newsletter is free and built-in. Name it: "Building from Lagos" or "AI Builds Weekly." Write about what you build each week. Even 100 subscribers who are founders and CTOs is worth ₦5M+ in potential contracts. Substack is also free as alternative.'},
+    {num:6,title:'TikTok Content Community (Month 2)',desc:'Post consistently 3x/week. Engage with every comment in the first hour. Follow and duet with other Nigerian tech creators (this gets you their audiences). Join the #NigerianTech and #BuildInPublic hashtag communities by consistently using them.'},
+    {num:7,title:'GitHub Open Source Presence (Ongoing)',desc:'Every project repo must have a quality README with: what it does, how to run it, architecture diagram. Open-source 1 small utility per month (an n8n template, a Claude prompt, a Python script). Developers who star your repos become referral sources. 100 GitHub stars is significant social proof.'},
+    {num:8,title:'Engage Strategically with Big Accounts (Ongoing)',desc:'Find the 10 most followed AI/tech accounts on LinkedIn and Twitter/X. Comment on every post they make within the first hour. Your comment must add genuine value (not "great post"). This exposes you to their audiences. Consistency here compounds heavily over 60-90 days.'},
+    {num:9,title:'Your Own Community (Month 4+)',desc:'Once you have 500+ LinkedIn + 300+ Twitter followers: create a WhatsApp group "AI Builders Nigeria" or a Discord server. Invite your engaged followers. Host a free monthly Twitter Space or LinkedIn Audio session on AI for Nigerian businesses. The community owns itself once started.'},
+    {num:10,title:'Collaborations (Month 3+)',desc:'DM 3 Nigerian tech creators every month for collab content. "I am building X, you are building Y — can we do a joint post or video?" Two audiences + one piece of content = fastest growth method. Target: SheCodeAfrica speakers, DevCareer mentors, Ingressive alumni.'},
+  ];
+  document.getElementById('comm-steps').innerHTML=steps.map(s=>`
+    <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--p)">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--t);color:var(--n);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">${s.num}</div>
+      <div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:4px">${s.title}</div>
+        <div style="color:var(--s);font-size:12px;line-height:1.7">${s.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── LEAD FINDER & OUTREACH ───────────────────────────────────────────────────
+let foundLeads = [];
+let selectedLead = null;
+
+function getSavedLeads() { return JSON.parse(localStorage.getItem('sc_leads') || '[]'); }
+function saveSavedLeads(l) { localStorage.setItem('sc_leads', JSON.stringify(l)); }
+
+async function findLeads(findMore = false) {
+  const industry = document.getElementById('lead-industry');
+  const industryText = industry.options[industry.selectedIndex].text;
+  const location = document.getElementById('lead-location').value;
+  const role = document.getElementById('lead-role').value;
+  const service = document.getElementById('lead-service').value;
+  const custom = document.getElementById('lead-custom').value.trim();
+
+  const think = document.getElementById('think-leads');
+  think.classList.add('show');
+
+  const searchQuery = custom || `${industryText} in ${location}`;
+  const countryCode = location.includes('Nigeria') ? 'ng' : location.includes('United States') ? 'us' : location.includes('United Kingdom') ? 'gb' : 'ng';
+
+  try {
+    // Step 1: Real Google Maps scrape
+    const scrapeRes = await fetch('/api/scrape', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        service: 'serper_maps',
+        query: { search: searchQuery, location, country_code: countryCode, industry: industryText, limit: 20 }
+      })
+    });
+    const scrapeData = await scrapeRes.json();
+
+    if (!scrapeRes.ok || !scrapeData.results?.length) {
+      // Fallback to AI if scraper unavailable
+      think.classList.remove('show');
+      showToast('Serper API not set. Get free key at serper.dev — falling back to AI leads.', 'error');
+      return findLeadsAI(findMore);
+    }
+
+    // Step 2: Transform real data into lead format
+    foundLeads = scrapeData.results.map(biz => ({
+      name: '',
+      title: role === 'owner' ? 'Owner/Founder' : role === 'ceo' ? 'CEO/MD' : role === 'cto' ? 'CTO' : 'Decision Maker',
+      company: biz.business_name,
+      industry: industryText,
+      location: biz.address || location,
+      email: '',
+      phone: biz.phone || '',
+      linkedin: '',
+      website: biz.website || '',
+      rating: biz.rating,
+      reviews: biz.reviews,
+      category: biz.category || '',
+      pain_point: '',
+      approach: '',
+      source: 'google_maps',
+    }));
+
+    renderLeadsTable(foundLeads);
+    document.getElementById('leads-results').style.display = 'block';
+    document.getElementById('lead-outreach-card').style.display = 'block';
+    think.classList.remove('show');
+    showToast(`Found ${foundLeads.length} REAL businesses from Google Maps!`, 'success');
+
+  } catch(e) {
+    think.classList.remove('show');
+    showToast('Scraping failed: ' + e.message + '. Add SERPER_API_KEY.', 'error');
+  }
+}
+
+// Fallback: AI-generated leads when scraper is unavailable
+async function findLeadsAI(findMore) {
+  const industry = document.getElementById('lead-industry').value;
+  const location = document.getElementById('lead-location').value;
+  const role = document.getElementById('lead-role').value;
+  const custom = document.getElementById('lead-custom').value.trim();
+  const think = document.getElementById('think-leads');
+  think.classList.add('show');
+
+  const prompt = `Generate 8 realistic B2B prospects in JSON array format for ${location}, industry: ${industry}, role: ${role}. ${custom||''} ${findMore?'Generate DIFFERENT ones.':''}
+Each object: {"name":"Full Name","title":"Job Title","company":"Real Company Name","industry":"${industry}","location":"${location}","email":"name@company.com","phone":"+234...","linkedin":"https://linkedin.com/in/slug","website":"https://company.com","pain_point":"specific pain","approach":"how to pitch"}
+Return ONLY valid JSON array.`;
+
+  try {
+    const result = await callAI(prompt);
+    think.classList.remove('show');
+    if (!result) return;
+    let leads = [];
+    try {
+      leads = JSON.parse(result.replace(/```json?\n?/g,'').replace(/```/g,'').trim());
+    } catch(e) {
+      const m = result.match(/\[[\s\S]*\]/);
+      if (m) try { leads = JSON.parse(m[0]); } catch(e2) {}
+    }
+    if (!leads.length) { showToast('Could not parse leads.', 'error'); return; }
+    foundLeads = leads.map(l => ({...l, source: 'ai_generated'}));
+    renderLeadsTable(foundLeads);
+    document.getElementById('leads-results').style.display = 'block';
+    document.getElementById('lead-outreach-card').style.display = 'block';
+    showToast(`${leads.length} AI-generated leads (not verified). Add SERPER_API_KEY for real data.`, 'info');
+  } catch(e) { think.classList.remove('show'); showToast('Failed: '+e.message, 'error'); }
+}
+
+function renderLeadsTable(leads) {
+  const html = `<table class="tbl">
+    <thead><tr>
+      <th>Business</th><th>Location</th><th>Rating</th><th>Contact</th><th>Actions</th>
+    </tr></thead>
+    <tbody>${leads.map((l, i) => `<tr>
+      <td>
+        <div style="font-weight:600;font-size:13px">${l.company}</div>
+        <div style="color:var(--s);font-size:10px">${l.category || l.industry || ''}</div>
+        ${l.source === 'ai_generated' ? '<span class="badge b-g" style="font-size:9px;margin-top:2px">AI Generated</span>' : '<span class="badge b-grn" style="font-size:9px;margin-top:2px">Verified</span>'}
+      </td>
+      <td style="font-size:11px;max-width:180px">${l.location || l.address || ''}</td>
+      <td style="text-align:center">
+        ${l.rating ? `<div style="color:var(--warn);font-weight:600">${l.rating}⭐</div><div style="color:var(--muted);font-size:10px">${l.reviews||0} reviews</div>` : '<span style="color:var(--muted)">—</span>'}
+      </td>
+      <td style="white-space:nowrap">
+        <div style="display:flex;flex-direction:column;gap:3px;font-size:11px">
+          ${l.phone ? `<a href="https://wa.me/${l.phone.replace(/[^0-9+]/g,'').replace('+','')}" target="_blank" style="color:#25d366;text-decoration:none">💬 ${l.phone}</a>` : ''}
+          ${l.phone ? `<a href="tel:${l.phone}" style="color:var(--accent);text-decoration:none">📞 Call</a>` : ''}
+          ${l.email ? `<a href="mailto:${l.email}" style="color:var(--accent);text-decoration:none">📧 ${l.email}</a>` : ''}
+          ${l.website ? `<a href="${l.website.startsWith('http')?l.website:'https://'+l.website}" target="_blank" style="color:var(--s);text-decoration:none">🌐 Website</a>` : ''}
+          ${l.linkedin ? `<a href="${l.linkedin}" target="_blank" style="color:#0a66c2;text-decoration:none">🔗 LinkedIn</a>` : ''}
+        </div>
+      </td>
+      <td style="white-space:nowrap">
+        <div style="display:flex;gap:4px;flex-direction:column">
+          <button class="btn btn-t btn-sm" onclick="selectLeadForOutreach(${i})">✉️ Outreach</button>
+          <button class="btn btn-g btn-sm" onclick="saveLead(${i})">💾 Save</button>
+        </div>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+  document.getElementById('leads-table-wrap').innerHTML = html;
+}
+
+function selectLeadForOutreach(i) {
+  selectedLead = foundLeads[i];
+  document.getElementById('outreach-for-name').textContent = `✉️ Outreach for ${selectedLead.name} — ${selectedLead.company}`;
+  document.getElementById('lead-outreach-card').scrollIntoView({ behavior: 'smooth' });
+  showToast(`Selected ${selectedLead.name}. Choose channel and generate.`, 'info');
+}
+
+async function generateLeadOutreach() {
+  if (!selectedLead) { showToast('Select a lead first by clicking ✉️', 'error'); return; }
+  const channel = document.getElementById('outreach-channel').value;
+  const think = document.getElementById('think-lead-out');
+  const out = document.getElementById('lead-out-msg');
+  think.classList.add('show');
+
+  const channelGuides = {
+    whatsapp: `WhatsApp DM. Very short (5-6 lines max), casual but professional, Nigerian tone. Start with "Hi [Name]". End with open question. No attachments reference.`,
+    linkedin: `LinkedIn DM. 3-4 sentences max. Reference something about their company. Professional but warm. End with ask for a call.`,
+    email: `Cold email. Include SUBJECT: line first. Under 120 words. Specific observation → your relevant build → clear CTA. Sign off with name and phone.`,
+    instagram: `Instagram DM. Very casual, 2-3 sentences. Reference their content or business. Offer specific value. End with question.`,
+    twitter: `Twitter/X DM. Under 200 chars ideally. Punchy, direct, value-first. No formality.`,
+  };
+
+  const prompt = `Write a ${channel} outreach message from ${ME.name} (${ME.company}, Lagos) to this specific prospect:
+
+Name: ${selectedLead.name}
+Title: ${selectedLead.title}
+Company: ${selectedLead.company}
+Industry: ${selectedLead.industry}
+Location: ${selectedLead.location}
+Pain point: ${selectedLead.pain_point}
+Best approach: ${selectedLead.approach}
+
+Channel rules: ${channelGuides[channel]}
+
+Samuel's relevant experience: Built AgentDesk (AI platform), Kamilight automation system, multiple business websites. Contact: ${ME.wa}
+
+Write the complete message now. Make it highly specific to THIS person and company. No placeholders — use their actual details.`;
+
+  try {
+    const result = await callAI(prompt);
+    think.classList.remove('show');
+    out.textContent = result || 'Could not generate. Try again.';
+  } catch(e) {
+    think.classList.remove('show');
+    out.textContent = 'Generation failed. Try again.';
+  }
+}
+
+function saveLead(i) {
+  const lead = foundLeads[i];
+  const saved = getSavedLeads();
+  if (saved.some(s => s.name === lead.name && s.company === lead.company)) {
+    showToast('Already saved!', 'info');
+    return;
+  }
+  saved.unshift({ ...lead, status: 'new', saved_at: new Date().toLocaleDateString() });
+  saveSavedLeads(saved);
+  renderSavedLeads();
+  showToast(`${lead.name} saved to your leads!`, 'success');
+}
+
+function saveAllLeads() {
+  const saved = getSavedLeads();
+  let added = 0;
+  foundLeads.forEach(lead => {
+    if (!saved.some(s => s.name === lead.name && s.company === lead.company)) {
+      saved.unshift({ ...lead, status: 'new', saved_at: new Date().toLocaleDateString() });
+      added++;
+    }
+  });
+  saveSavedLeads(saved);
+  renderSavedLeads();
+  showToast(`${added} leads saved!`, 'success');
+}
+
+function renderSavedLeads() {
+  const filter = document.getElementById('saved-filter')?.value || 'all';
+  const all = getSavedLeads();
+  const leads = filter === 'all' ? all : all.filter(l => l.status === filter);
+  document.getElementById('saved-count').textContent = all.length;
+
+  if (!leads.length) {
+    document.getElementById('saved-leads-wrap').innerHTML = '<div style="color:var(--s);text-align:center;padding:30px;font-size:13px">No saved leads yet. Find prospects above and click 💾 to save.</div>';
+    return;
+  }
+
+  const statusIcons = { new:'🟢', contacted:'🟡', responded:'🔵', client:'⭐', lost:'⚫' };
+  const nextStatus = { new:'contacted', contacted:'responded', responded:'client' };
+
+  document.getElementById('saved-leads-wrap').innerHTML = `<table class="tbl">
+    <thead><tr><th>Name</th><th>Company</th><th>Status</th><th>Contact</th><th>Actions</th></tr></thead>
+    <tbody>${leads.map((l, i) => {
+      const realIdx = all.indexOf(l);
+      return `<tr>
+        <td><div style="font-weight:600;font-size:12px">${l.name}</div><div style="color:var(--s);font-size:10px">${l.title||''}</div></td>
+        <td style="font-size:12px">${l.company}</td>
+        <td><span class="badge ${l.status==='client'?'b-grn':l.status==='new'?'b-t':'b-gray'}">${statusIcons[l.status]||''} ${l.status}</span></td>
+        <td style="font-size:11px;white-space:nowrap">
+          ${l.phone ? `<a href="https://wa.me/${l.phone.replace(/[^0-9]/g,'')}" target="_blank" style="color:#25d366;text-decoration:none">💬</a> ` : ''}
+          ${l.email ? `<a href="mailto:${l.email}" style="color:var(--accent);text-decoration:none">📧</a> ` : ''}
+          ${l.linkedin ? `<a href="${l.linkedin}" target="_blank" style="color:#0a66c2;text-decoration:none">🔗</a> ` : ''}
+        </td>
+        <td style="white-space:nowrap;display:flex;gap:4px">
+          ${nextStatus[l.status] ? `<button class="btn btn-g btn-sm" onclick="updateLeadStatus(${realIdx},'${nextStatus[l.status]}')" title="Mark as ${nextStatus[l.status]}">→</button>` : ''}
+          <button class="btn btn-g btn-sm" onclick="deleteSavedLead(${realIdx})" title="Remove">×</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function updateLeadStatus(i, status) {
+  const leads = getSavedLeads();
+  leads[i].status = status;
+  saveSavedLeads(leads);
+  renderSavedLeads();
+  showToast(`Status updated to ${status}`, 'success');
+}
+
+function deleteSavedLead(i) {
+  const leads = getSavedLeads();
+  leads.splice(i, 1);
+  saveSavedLeads(leads);
+  renderSavedLeads();
+}
+
+function exportLeadsCSV() {
+  const leads = foundLeads.length ? foundLeads : getSavedLeads();
+  if (!leads.length) { showToast('No leads to export', 'error'); return; }
+  const headers = ['Name','Title','Company','Industry','Location','Email','Phone','LinkedIn','Website','Pain Point'];
+  const rows = leads.map(l => [l.name,l.title,l.company,l.industry,l.location,l.email,l.phone,l.linkedin,l.website,l.pain_point].map(v=>`"${(v||'').replace(/"/g,'""')}"`));
+  const csv = [headers.join(','), ...rows.map(r=>r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sastech-leads-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  showToast('CSV exported!', 'success');
+}
+
+// ─── AUTOMATION ──────────────────────────────────────────────────────────────
+function renderAutomation(){
+  const wf=[
+    {name:'Daily Content Idea Generator',tool:'n8n + Claude API',trigger:'Every morning at 7AM',flow:'→ Fetch trending topics from Twitter/X via Exa AI\n→ Claude API generates 3 post ideas tailored to your brand\n→ Ideas sent to your Telegram or WhatsApp\n→ You pick one and write it, or send to AI Post Writer',complexity:'Easy',value:'Never run out of content ideas'},
+    {name:'LinkedIn Post Scheduler',tool:'n8n + LinkedIn API',trigger:'Manual or scheduled',flow:'→ You write/generate post in this app\n→ Send to n8n webhook\n→ n8n posts to LinkedIn at optimal time (8AM, 12PM, or 6PM WAT)\n→ Confirmation sent to WhatsApp',complexity:'Medium',value:'Post consistently without being at the screen'},
+    {name:'Cold Email Outreach Sequence',tool:'n8n + Instantly.ai + Apollo',trigger:'Weekly list upload',flow:'→ Apollo.io exports Nigerian business contacts (CSV)\n→ n8n webhook ingests the list\n→ Claude personalises each email using company name + industry\n→ Instantly.ai sends sequence: Day 1 intro → Day 4 follow-up → Day 10 final',complexity:'Medium',value:'Automated B2B outreach pipeline'},
+    {name:'Blog Post to Social Media',tool:'n8n + Claude API',trigger:'New blog post published',flow:'→ Webhook fires when you publish on sasdev.com\n→ Claude reads the article → generates LinkedIn post, Twitter thread, TikTok script\n→ All 3 drafts sent to your Telegram\n→ You review and approve each with one button tap',complexity:'Medium',value:'One article becomes 3 platform posts automatically'},
+    {name:'WhatsApp Lead to Notion CRM',tool:'n8n + WhatsApp + Notion',trigger:'New WhatsApp message to business number',flow:'→ WATI webhook fires on new message\n→ n8n extracts: name, query, phone\n→ Claude classifies: service interest + urgency\n→ New record created in Notion client database\n→ You get a Telegram alert with summary',complexity:'Easy',value:'Never lose a lead in your WhatsApp inbox'},
+    {name:'Weekly Content Performance Report',tool:'n8n + LinkedIn API + Twitter API',trigger:'Every Sunday 8PM',flow:'→ Pull LinkedIn post metrics (views, reactions, comments)\n→ Pull Twitter engagement stats\n→ Claude writes a 200-word summary: what worked, what did not\n→ Report sent to WhatsApp/Telegram\n→ Next week content suggestions included',complexity:'Hard',value:'Data-driven content improvement every week'},
+  ];
+  document.getElementById('auto-workflows').innerHTML=wf.map(w=>`
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">
+        <div>
+          <div style="font-weight:600;font-size:13px">${w.name}</div>
+          <div style="color:var(--t);font-size:11px;margin-top:2px">${w.tool}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <span class="badge ${w.complexity==='Easy'?'b-grn':w.complexity==='Medium'?'b-t':'b-g'}">${w.complexity}</span>
+        </div>
+      </div>
+      <div style="color:var(--s);font-size:12px;margin-bottom:8px"><strong>Trigger:</strong> ${w.trigger}</div>
+      <div style="background:var(--nl);border-radius:6px;padding:10px;font-size:12px;color:var(--pale);white-space:pre-line;line-height:1.7">${w.flow}</div>
+      <div style="margin-top:8px;padding:6px 10px;background:#06422015;border-radius:6px;font-size:11px;color:#4ADE80">💡 Value: ${w.value}</div>
+    </div>
+  `).join('');
+}
+
+// ─── TEMPLATES ────────────────────────────────────────────────────────────────
+function renderTemplates(){
+  const tmpl=[
+    {title:'WhatsApp — Nigerian SME (Cold)',tag:'NGN Lead',text:`Hi [Name],
+
+I came across [Business Name] and noticed [specific gap — no website / old website / no booking system].
+
+I'm Samuel, founder of Sastech Consults (CAC registered). We build websites, AI chatbots, and apps for Nigerian businesses.
+
+For [their situation], I think there's a straightforward fix. Built something similar for a [similar business type] last month.
+
+Is this something you've been thinking about? Happy to do a quick 15-minute call — no charge. No pressure.`},
+    {title:'LinkedIn DM — Startup Founder',tag:'LinkedIn',text:`Hi [Name],
+
+I saw your post about [specific thing] — the challenge you mentioned around [pain point] is exactly what I solve.
+
+I built AgentDesk — a multi-agent AI platform now in production at a Nigerian logistics company — and a full automation system for Kamilight Global Logistics.
+
+Would a 20-minute call to explore what that looks like for [Company] make sense?`},
+    {title:'Cold Email — International CTO',tag:'International',text:`Subject: AI Systems Engineer with production experience — [Their company]
+
+Hi [Name],
+
+I noticed [specific thing about their product/stack/job post].
+
+I'm an AI Systems Engineer from Lagos. I built AgentDesk — a multi-tenant AI agent platform in production at a logistics company — using Python, FastAPI, LangGraph, CrewAI, Claude API, and MCP.
+
+I'd add value specifically on [their challenge].
+
+Portfolio: sasdev.com | GitHub: github.com/samuelayomide
+
+Worth 20 minutes?
+Samuel`},
+    {title:'Upwork Proposal',tag:'Upwork',text:`I read your job post carefully — specifically the part about [their requirement].
+
+I built AgentDesk, a production AI platform serving multiple companies simultaneously using [relevant stack], and a complete automation system for a Pan-African logistics company.
+
+My approach for your project:
+1. [First key step tailored to their need]
+2. [Second step]
+3. [Delivery + testing]
+
+One question: [smart clarifying question that shows deep understanding]
+
+Available to start immediately. Portfolio: sasdev.com`},
+    {title:'LinkedIn Connection Note',tag:'LinkedIn',text:`Hi [Name], your work on [specific thing] caught my attention. I'm building AI systems for Nigerian businesses and working on [current project]. Would love to be in your network.`},
+    {title:'Referral Request (after delivery)',tag:'Retention',text:`Hi [Name], it's been a pleasure building [project] with you. Really glad it's working well.
+
+One quick ask — if you know any business owner who could benefit from [the service], I'd really appreciate an introduction. Even a quick WhatsApp intro is enough.
+
+And if you're happy with the work, a Google review would mean a lot: [your Google Business link]
+
+Thank you 🙏`},
+  ];
+  document.getElementById('template-list').innerHTML=tmpl.map(t=>`
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-weight:600;font-size:14px">${t.title}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badge b-t">${t.tag}</span>
+          <button class="btn btn-g btn-sm" onclick="copyText(this,'${encodeURIComponent(t.text)}')">📋 Copy</button>
+        </div>
+      </div>
+      <div style="background:var(--nl);border-radius:8px;padding:12px;font-size:13px;color:var(--pale);line-height:1.7;white-space:pre-line">${t.text}</div>
+    </div>
+  `).join('');
+}
+
+function copyText(btn,encoded){
+  navigator.clipboard.writeText(decodeURIComponent(encoded)).then(()=>{
+    btn.textContent='✅ Copied!';
+    setTimeout(()=>{btn.textContent='📋 Copy';},2000);
+  });
+}
+
+// ─── SEO TITLE TEMPLATE ───────────────────────────────────────────────────────
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg, type='info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+// ─── IMAGE GENERATION ─────────────────────────────────────────────────────────
+function copyImgPrompt() {
+  const prompt = document.getElementById('img-prompt').value;
+  if (!prompt) { showToast('No image prompt to copy', 'error'); return; }
+  navigator.clipboard.writeText(prompt).then(() => {
+    showToast('Image prompt copied! Paste into Bing Creator, Ideogram, or ChatGPT', 'success');
+  });
+}
+
+async function generatePostImage() {
+  const content = document.getElementById('post-out').textContent;
+  let prompt = document.getElementById('img-prompt').value.trim();
+  if (!prompt && content) {
+    prompt = `Professional social media graphic for: ${content.substring(0, 200)}. Modern dark tech aesthetic, vibrant cyan and purple accents, clean minimal design, no text overlay, 1200x627px`;
+    document.getElementById('img-prompt').value = prompt;
+  }
+  if (!prompt) { showToast('Generate content first', 'error'); return; }
+  const think = document.getElementById('think-img');
+  think.classList.add('show');
+  try {
+    const res = await fetch('/api/generate-image', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ prompt, size: '1792x1024' })
+    });
+    const data = await res.json();
+    think.classList.remove('show');
+    if (data.imageUrl) {
+      document.getElementById('img-preview').src = data.imageUrl;
+      document.getElementById('img-preview').style.display = 'block';
+      document.getElementById('img-download').href = data.imageUrl;
+      document.getElementById('img-actions').style.display = 'flex';
+      showToast('Image generated!', 'success');
+    } else {
+      showToast('No API key set. Copy the prompt and use a free generator instead!', 'info');
+      copyImgPrompt();
+    }
+  } catch(e) {
+    think.classList.remove('show');
+    showToast('Image API unavailable. Prompt copied — use a free generator!', 'info');
+    copyImgPrompt();
+  }
+}
+
+// ─── PWA REGISTRATION ─────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(() => console.log('SW registered')).catch(e => console.warn('SW failed:', e));
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderPipeline();
+</script>
+</body>
+</html>
