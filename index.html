@@ -65,7 +65,100 @@ button,input,textarea,select{font-family:inherit}
 .card-sub{color:var(--s);font-size:12px;margin-bottom:14px;line-height:1.5}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}.sidebar{display:none}.app::before{display:none}}
+/* ── MOBILE NAV BAR ── */
+.mobile-topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:var(--surface);border-bottom:1px solid var(--border);z-index:900;align-items:center;justify-content:space-between;padding:0 16px;backdrop-filter:blur(16px)}
+.mobile-topbar .mob-logo{display:flex;align-items:center;gap:8px}
+.mobile-topbar .mob-logo .sb-icon{width:30px;height:30px;font-size:13px;border-radius:8px}
+.mobile-topbar .mob-logo-text{font-weight:700;font-size:13px}
+.hamburger{width:40px;height:40px;border:none;background:transparent;color:var(--w);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);transition:background .2s}
+.hamburger:hover{background:rgba(255,255,255,.06)}
+.hamburger span{display:flex;flex-direction:column;gap:4px;width:20px}
+.hamburger span i{display:block;width:100%;height:2px;background:var(--w);border-radius:2px;transition:all .3s ease}
+.hamburger.open span i:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.hamburger.open span i:nth-child(2){opacity:0}
+.hamburger.open span i:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+
+/* Mobile overlay sidebar */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:950;opacity:0;transition:opacity .3s ease;backdrop-filter:blur(4px)}
+.sidebar-overlay.show{display:block;opacity:1}
+
+/* Mobile bottom nav */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:900;padding:4px 6px calc(4px + env(safe-area-inset-bottom));backdrop-filter:blur(16px)}
+.bottom-nav-inner{display:flex;justify-content:space-around;align-items:center}
+.bnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border:none;background:transparent;color:var(--s);font-size:9px;font-weight:500;cursor:pointer;transition:all .2s;border-radius:8px;min-width:52px;position:relative}
+.bnav-item:hover,.bnav-item:active{color:var(--w);background:rgba(255,255,255,.04)}
+.bnav-item.active{color:var(--accent)}
+.bnav-item.active::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:20px;height:2px;background:var(--accent);border-radius:0 0 2px 2px}
+.bnav-icon{font-size:18px;line-height:1}
+.bnav-label{line-height:1;letter-spacing:.01em}
+
+/* More menu (slide-up from bottom nav) */
+.more-menu{display:none;position:fixed;bottom:60px;left:8px;right:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;z-index:910;padding:8px;animation:slideUpMenu .25s ease;box-shadow:0 -8px 40px rgba(0,0,0,.5)}
+.more-menu.show{display:block}
+@keyframes slideUpMenu{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.more-menu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.more-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border:none;background:transparent;color:var(--s);font-size:10px;font-weight:500;cursor:pointer;border-radius:var(--radius-sm);transition:all .2s}
+.more-item:hover,.more-item:active{background:rgba(255,255,255,.06);color:var(--w)}
+.more-item.active{color:var(--accent);background:var(--accent-glow)}
+.more-item-icon{font-size:22px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  :root{--topbar:56px}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:960;transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);width:280px;overflow-y:auto}
+  .sidebar.mobile-open{transform:translateX(0)}
+  .app::before{display:none}
+  .mobile-topbar{display:flex}
+  .bottom-nav{display:block}
+  .main{padding-top:56px;padding-bottom:64px}
+  .topbar{display:none}
+  .content{padding:16px 12px;padding-bottom:80px}
+  .grid2,.grid3{grid-template-columns:1fr}
+
+  /* Cards */
+  .card{padding:14px;margin-bottom:12px;border-radius:12px}
+  .card-title{font-size:13px}
+  .card-sub{font-size:11px}
+
+  /* Buttons */
+  .btn{padding:10px 14px;font-size:12px}
+  .btn-sm{padding:7px 10px;font-size:11px}
+
+  /* Forms */
+  input,textarea,select{padding:10px 12px;font-size:14px}
+  label{font-size:10px}
+
+  /* Tables - horizontal scroll */
+  .tbl{font-size:11px;display:block;overflow-x:auto;white-space:nowrap}
+  .tbl th{padding:8px 10px;font-size:9px}
+  .tbl td{padding:8px 10px}
+
+  /* Stats */
+  .stat{padding:14px}
+  .stat-num{font-size:22px}
+  .stat-label{font-size:10px}
+
+  /* Platform tabs */
+  .ptabs{gap:4px}
+  .ptab{padding:6px 10px;font-size:11px}
+
+  /* Editor */
+  .editor-toolbar{padding:8px 10px}
+  #editor-body{min-height:200px;padding:12px;font-size:13px}
+
+  /* AI output */
+  .ai-out{padding:14px;font-size:12px;max-height:350px}
+
+  /* Image gen */
+  .img-preview{max-width:100%}
+
+  /* Quick triggers */
+  .card div[style*="flex-wrap"]{gap:6px}
+
+  /* Toast */
+  .toast-container{top:auto;bottom:72px;right:12px;left:12px}
+  .toast{font-size:12px;text-align:center}
+}
 
 /* ── FORMS ── */
 .field{margin-bottom:16px}
@@ -157,6 +250,25 @@ select option{background:var(--surface)}
 </head>
 <body>
 <div class="app">
+
+<!-- MOBILE TOP BAR -->
+<div class="mobile-topbar" id="mobile-topbar">
+  <div class="mob-logo">
+    <div class="sb-icon">S</div>
+    <div>
+      <div class="mob-logo-text">Sastech</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <div id="mob-page-title" style="font-size:12px;color:var(--s);font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AI Post Writer</div>
+    <button class="hamburger" id="hamburger-btn" onclick="toggleMobileSidebar()">
+      <span><i></i><i></i><i></i></span>
+    </button>
+  </div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
 <!-- SIDEBAR -->
 <div class="sidebar">
@@ -644,6 +756,53 @@ The script will include:
 </div><!-- /main -->
 </div><!-- /app -->
 
+<!-- MOBILE BOTTOM NAV -->
+<div class="bottom-nav" id="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="bnav-item active" id="bnav-writer" onclick="mobileNav('writer')">
+      <span class="bnav-icon">✍️</span>
+      <span class="bnav-label">Writer</span>
+    </button>
+    <button class="bnav-item" id="bnav-blog" onclick="mobileNav('blog')">
+      <span class="bnav-icon">📝</span>
+      <span class="bnav-label">Blog</span>
+    </button>
+    <button class="bnav-item" id="bnav-outreach" onclick="mobileNav('outreach')">
+      <span class="bnav-icon">🎯</span>
+      <span class="bnav-label">Leads</span>
+    </button>
+    <button class="bnav-item" id="bnav-pipeline" onclick="mobileNav('pipeline')">
+      <span class="bnav-icon">📅</span>
+      <span class="bnav-label">Pipeline</span>
+    </button>
+    <button class="bnav-item" id="bnav-more" onclick="toggleMoreMenu()">
+      <span class="bnav-icon">☰</span>
+      <span class="bnav-label">More</span>
+    </button>
+  </div>
+</div>
+
+<!-- MORE MENU (slides up from bottom nav) -->
+<div class="more-menu" id="more-menu">
+  <div class="more-menu-grid">
+    <button class="more-item" onclick="mobileNav('video')">
+      <span class="more-item-icon">🎬</span>Video Scripts
+    </button>
+    <button class="more-item" onclick="mobileNav('portfolio')">
+      <span class="more-item-icon">🗂️</span>Portfolio
+    </button>
+    <button class="more-item" onclick="mobileNav('community')">
+      <span class="more-item-icon">🏘️</span>Community
+    </button>
+    <button class="more-item" onclick="mobileNav('automation')">
+      <span class="more-item-icon">⚡</span>Automation
+    </button>
+    <button class="more-item" onclick="mobileNav('templates')">
+      <span class="more-item-icon">📋</span>Templates
+    </button>
+  </div>
+</div>
+
 <!-- Toast container -->
 <div class="toast-container" id="toast-container"></div>
 
@@ -677,12 +836,101 @@ function show(id){
   document.querySelectorAll('.nav-item').forEach(n=>{if(n.getAttribute('onclick')?.includes("'"+id+"'"))n.classList.add('active');});
   document.getElementById('tb-title').textContent = panels[id].title;
   document.getElementById('tb-sub').textContent = panels[id].sub;
+  // Update mobile page title
+  const mobTitle = document.getElementById('mob-page-title');
+  if(mobTitle) mobTitle.textContent = panels[id].title;
+  // Update bottom nav active state
+  updateBottomNav(id);
   if(id==='community') renderCommunity();
   if(id==='outreach') renderSavedLeads();
   if(id==='automation') renderAutomation();
   if(id==='templates') renderTemplates();
   if(id==='portfolio') renderPortfolio();
   if(id==='pipeline') renderPipeline();
+}
+
+// ─── MOBILE NAV ───────────────────────────────────────────────────────────────
+function toggleMobileSidebar(){
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const hamburger = document.getElementById('hamburger-btn');
+  const isOpen = sidebar.classList.contains('mobile-open');
+  if(isOpen){
+    sidebar.classList.remove('mobile-open');
+    overlay.classList.remove('show');
+    hamburger.classList.remove('open');
+    document.body.style.overflow='';
+  } else {
+    sidebar.classList.add('mobile-open');
+    overlay.classList.add('show');
+    hamburger.classList.add('open');
+    document.body.style.overflow='hidden';
+  }
+}
+function closeMobileSidebar(){
+  document.querySelector('.sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+  document.getElementById('hamburger-btn').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+function mobileNav(id){
+  show(id);
+  closeMoreMenu();
+  closeMobileSidebar();
+  // Scroll to top of content
+  document.getElementById('main-content').scrollTo(0,0);
+}
+
+// Wrap sidebar nav-item clicks for mobile
+document.querySelectorAll('.sidebar .nav-item').forEach(btn=>{
+  const origOnclick = btn.getAttribute('onclick');
+  btn.addEventListener('click', ()=>{
+    closeMobileSidebar();
+  });
+});
+
+function toggleMoreMenu(){
+  const menu = document.getElementById('more-menu');
+  const isOpen = menu.classList.contains('show');
+  if(isOpen){
+    closeMoreMenu();
+  } else {
+    menu.classList.add('show');
+    document.getElementById('bnav-more').classList.add('active');
+  }
+}
+function closeMoreMenu(){
+  document.getElementById('more-menu').classList.remove('show');
+  // Don't remove active from 'more' if a more-menu page is active
+}
+
+// Close more menu when tapping outside
+document.addEventListener('click',(e)=>{
+  const menu = document.getElementById('more-menu');
+  const moreBtn = document.getElementById('bnav-more');
+  if(menu && menu.classList.contains('show') && !menu.contains(e.target) && !moreBtn.contains(e.target)){
+    closeMoreMenu();
+  }
+});
+
+function updateBottomNav(id){
+  const primaryTabs = ['writer','blog','outreach','pipeline'];
+  const moreTabs = ['video','portfolio','community','automation','templates'];
+  // Clear all bottom nav active
+  document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.more-item').forEach(b=>b.classList.remove('active'));
+
+  if(primaryTabs.includes(id)){
+    const el = document.getElementById('bnav-'+id);
+    if(el) el.classList.add('active');
+  } else if(moreTabs.includes(id)){
+    document.getElementById('bnav-more').classList.add('active');
+    // Highlight in more menu
+    document.querySelectorAll('.more-item').forEach(b=>{
+      if(b.getAttribute('onclick')?.includes("'"+id+"'")) b.classList.add('active');
+    });
+  }
 }
 
 // ─── AI CALL (via secure backend proxy) ──────────────────────────────────────
