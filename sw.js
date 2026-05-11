@@ -1,4 +1,4 @@
-const CACHE = 'sce-v2';
+const CACHE = 'sce-v3';
 const STATIC = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
