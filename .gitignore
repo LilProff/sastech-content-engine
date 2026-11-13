@@ -2,3 +2,14 @@ node_modules/
 .env
 .env.local
 .vercel/
+
+# Machine-specific Claude Code / agent-skill state. Not committed on purpose:
+# - .claude/skills/* are symlinks with absolute local paths (broken on any other machine)
+# - .agents/ + skills-lock.json are third-party skill packs; reinstall with `npx skills@latest add <repo>`
+#   (see docs/career-os/HANDOFF.md section 10). The lock file also records a local path.
+# .claude/launch.json (preview dev-server config) IS committed.
+.claude/skills/
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+.agents/
+skills-lock.json
